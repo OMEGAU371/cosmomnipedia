@@ -3019,6 +3019,10 @@
                 font-size: 16px;
             }
 
+            .toc-text-mask {
+                display: none;
+            }
+
             #interactive-scrollbar {
                 width: 6px;
             }
@@ -4542,6 +4546,7 @@
 
                 const siteName = "Cosmomnipedia - 寰普百科";
                 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const isMobileLayout = window.matchMedia('(max-width: 768px)').matches;
 
                 const articleTitleElement = document.querySelector('.hero h1');
                 if (articleTitleElement) {
@@ -4570,7 +4575,7 @@
                     body.style.height = `${smoothScrollWrapper.scrollHeight}px`;
                     adjustTitleFontSize();
                     calculateTocPositions();
-                    if (wordCloudInstance) {
+                    if (!isMobileLayout && wordCloudInstance) {
                         wordCloudInstance.redraw();
                     }
                     setupInfoboxScrollbar();
@@ -4588,6 +4593,13 @@
                 function initSmoothScroll() {
                     if (animationFrameId) {
                         cancelAnimationFrame(animationFrameId);
+                    }
+                    if (isMobileLayout) {
+                        smoothScrollWrapper.style.transform = '';
+                        body.style.height = 'auto';
+                        handleScrollEffects(window.scrollY);
+                        addTrackedListener(window, 'scroll', () => handleScrollEffects(window.scrollY), { passive: true });
+                        return;
                     }
                     update();
                 }
@@ -4609,7 +4621,9 @@
                         wave_period = 6000;
                     const waveBlur = wave_amplitude * (0.5 * Math.sin(2 * Math.PI * Date.now() / wave_period) + 0.5);
                     const scrollBlur = Math.min(scrollData.current / 50, 20);
-                    heroBg.style.filter = `blur(${waveBlur + scrollBlur}px) ${body.classList.contains('dark-mode') ? 'brightness(0.7)' : 'brightness(1)'}`;
+                    if (!isMobileLayout) {
+                        heroBg.style.filter = `blur(${waveBlur + scrollBlur}px) ${body.classList.contains('dark-mode') ? 'brightness(0.7)' : 'brightness(1)'}`;
+                    }
 
                     handleScrollEffects(scrollData.current);
                     animationFrameId = requestAnimationFrame(update);
@@ -4669,6 +4683,10 @@
                     if (!tocList) return;
                     tocList.innerHTML = '';
                     tocItems.length = 0;
+                    if (!allHeaders.length) {
+                        body.classList.remove('scrollbar-active');
+                        return;
+                    }
                     requestAnimationFrame(() => {
                         const docHeight = smoothScrollWrapper.scrollHeight - window.innerHeight;
                         const scrollbarHeight = scrollbarContainer.clientHeight;
@@ -5241,8 +5259,10 @@
 
                 function setupCollapsibleTables() {
                     document.querySelectorAll('.table-container').forEach(container => {
+                        if (container.dataset.collapsibleReady === 'true') return;
                         const caption = container.querySelector('.wikitable caption');
                         if (caption) {
+                            container.dataset.collapsibleReady = 'true';
                             const titleBar = document.createElement('div');
                             titleBar.className = 'table-titlebar';
 
@@ -5276,6 +5296,11 @@
                 }
 
                 function setupWordCloud() {
+                    if (isMobileLayout) {
+                        const container = document.getElementById('word-cloud-container');
+                        if (container) container.style.display = 'none';
+                        return;
+                    }
                     const wordList = generateWordListFromArticle(),
                         canvas = document.getElementById('word-cloud-canvas');
                     if (!canvas) return;
@@ -5639,6 +5664,7 @@
 
                 function setupMobileSwipeTOC() {
                     if (!isTouchDevice) return;
+                    if (isMobileLayout) return;
                     let touchStartX = 0, touchStartY = 0;
                     const swipeThreshold = 50;
                     const edgeThreshold = 50;
