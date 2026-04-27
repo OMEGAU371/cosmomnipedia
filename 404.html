@@ -4468,6 +4468,7 @@
                 async function showImage(newIndex, direction) {
                     if (viewerImage.classList.contains('animating')) return;
                     viewerImage.classList.add('animating');
+                    updatePagination(newIndex);
 
                     await waitForReset();
                     await new Promise(resolve => setTimeout(resolve, 300));
@@ -4499,7 +4500,7 @@
                 document.getElementById('next-image')?.addEventListener('click', () => showImage((currentImageIndex + 1) % articleImages.length, 'next'));
                 document.getElementById('prev-image')?.addEventListener('click', () => showImage((currentImageIndex - 1 + articleImages.length) % articleImages.length, 'prev'));
 
-                function handleViewerPanStart(e) { e.preventDefault(); isPanning = true; velocityX = velocityY = 0; lastX = e.touches ? e.touches[0].clientX : e.clientX; lastY = e.touches ? e.touches[0].clientY : e.clientY; const dx = clientX - lastX; const dy = clientY - lastY; viewerState.targetX += dx; viewerState.targetY += dy; velocityX = dx; velocityY = dy; lastX = clientX; lastY = clientY; }
+                function handleViewerPanStart(e) { e.preventDefault(); isPanning = true; velocityX = velocityY = 0; lastX = e.touches ? e.touches[0].clientX : e.clientX; lastY = e.touches ? e.touches[0].clientY : e.clientY; }
                 function handleViewerPanMove(e) { if (!isPanning) return; const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const dx = clientX - lastX; const dy = clientY - lastY; viewerState.targetX += dx; viewerState.targetY += dy; velocityX = dx; velocityY = dy; lastX = clientX; lastY = clientY; }
                 function handleViewerPanEnd() { isPanning = false; }
 
