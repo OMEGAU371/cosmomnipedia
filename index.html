@@ -3391,11 +3391,11 @@
             function transition_PageEnter(mode, setupPageFunction, dataExtractor, finalizeFunction) {
                 const initializationStartTime = Date.now();
 
-                setupPageFunction();
-
                 const blackScreenHold = (mode === 'initial') ? 0 : 1000;
 
-                setTimeout(() => {
+                setTimeout(async () => {
+                    await setupPageFunction();
+
                     const loadingScreenStartTime = Date.now();
                     const { images, tips } = dataExtractor();
 
@@ -3439,12 +3439,64 @@
             }
 
             let articleCleanupFunction = null;
+            let articleContentLoadPromise = null;
 
-            function setupArticlePage() {
+            function getDeploymentBasePath() {
+                return window.location.pathname === '/cosmomnipedia' || window.location.pathname.startsWith('/cosmomnipedia/')
+                    ? '/cosmomnipedia'
+                    : '';
+            }
+
+            async function loadArticleContent() {
+                const articleContainer = document.getElementById('article-content-container');
+                if (!articleContainer || articleContainer.dataset.loaded === 'true') return;
+
+                if (!articleContentLoadPromise) {
+                    const dataUrl = `${getDeploymentBasePath()}/data/anatolia.json`;
+                    articleContentLoadPromise = fetch(dataUrl)
+                        .then(response => {
+                            if (!response.ok) throw new Error(`Failed to load article data: ${response.status}`);
+                            return response.text();
+                        })
+                        .then(rawArticleData => {
+                            let contentHtml = '';
+                            try {
+                                contentHtml = JSON.parse(rawArticleData).contentHtml || '';
+                            } catch {
+                                const marker = '"contentHtml": "';
+                                const start = rawArticleData.indexOf(marker);
+                                const end = rawArticleData.lastIndexOf('"\r\n}');
+                                if (start !== -1 && end !== -1 && end > start) {
+                                    contentHtml = rawArticleData
+                                        .slice(start + marker.length, end)
+                                        .replace(/\\n/g, '\n')
+                                        .replace(/\\"/g, '"')
+                                        .replace(/\\\\/g, '\\');
+                                }
+                            }
+                            if (!contentHtml) throw new Error('Article data has no contentHtml field.');
+                            articleContainer.innerHTML = contentHtml;
+                            articleContainer.dataset.loaded = 'true';
+                            if (typeof lucide !== 'undefined') {
+                                lucide.createIcons({ nodes: Array.from(articleContainer.querySelectorAll('[data-lucide]')) });
+                            }
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            articleContainer.innerHTML = '<p>文章内容加载失败，请稍后重试。</p>';
+                            articleContainer.dataset.loaded = 'true';
+                        });
+                }
+
+                await articleContentLoadPromise;
+            }
+
+            async function setupArticlePage() {
                 body.classList.remove('on-home-page');
                 homePage.style.display = 'none';
                 articlePage.style.display = 'block';
                 if (homePageCleanupFunction) { homePageCleanupFunction(); homePageCleanupFunction = null; }
+                await loadArticleContent();
 
                 const tocNavButton = document.getElementById('toc-nav-button');
                 if (tocNavButton) {
@@ -3567,9 +3619,7 @@
                 });
             }
 
-            const routeBasePath = window.location.pathname === '/cosmomnipedia' || window.location.pathname.startsWith('/cosmomnipedia/')
-                ? '/cosmomnipedia'
-                : '';
+            const routeBasePath = getDeploymentBasePath();
 
             page.base(routeBasePath || '/');
             page('/', () => { showHomePage('transition'); });
