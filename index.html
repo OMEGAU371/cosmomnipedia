@@ -2941,6 +2941,31 @@
                 align-items: center;
             }
 
+            .nav-logo-container {
+                min-width: 0;
+                max-width: calc(100vw - 84px);
+            }
+
+            .nav-logo,
+            .nav-title-swap {
+                min-width: 0;
+            }
+
+            .nav-logo span,
+            .nav-title-swap span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            body:not(.on-home-page) nav.scrolled-past-hero .nav-logo {
+                transform: translateY(0);
+            }
+
+            body:not(.on-home-page) nav.scrolled-past-hero .nav-title-swap {
+                display: none;
+            }
+
             .image-card.float-right,
             .wiki-infobox {
                 float: none;
@@ -3024,19 +3049,100 @@
             }
 
             #scrollbar-container {
+                width: min(82vw, 320px);
+                max-width: calc(100vw - 48px);
                 pointer-events: none;
+                transform: translateX(100%);
+                transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1);
             }
 
             body.scrollbar-active #scrollbar-container {
                 pointer-events: auto;
+                transform: translateX(0);
             }
 
-            #interactive-scrollbar {
-                width: 6px;
-            }
-
+            #interactive-scrollbar,
+            body.scrollbar-active #interactive-scrollbar,
             #scrollbar-container:hover #interactive-scrollbar {
-                width: 140px;
+                width: 100%;
+                background-color: rgba(253, 250, 246, 0.92);
+                border-left: 1px solid rgba(0, 0, 0, 0.08);
+            }
+
+            body.dark-mode #interactive-scrollbar,
+            body.dark-mode.scrollbar-active #interactive-scrollbar,
+            body.dark-mode #scrollbar-container:hover #interactive-scrollbar {
+                background-color: rgba(30, 30, 30, 0.92);
+                border-left-color: rgba(255, 255, 255, 0.1);
+            }
+
+            #toc-list {
+                box-sizing: border-box;
+                width: 100%;
+                height: auto;
+                min-height: 100vh;
+                padding: 76px 18px 28px;
+                overflow-y: auto;
+                overscroll-behavior: contain;
+            }
+
+            #toc-list::before {
+                content: "目录";
+                display: block;
+                margin: 0 0 18px;
+                color: var(--heading-color);
+                font-family: var(--font-serif);
+                font-size: 1.5rem;
+                font-weight: 800;
+                line-height: 1.2;
+            }
+
+            .toc-item {
+                position: relative;
+                top: auto !important;
+                left: auto;
+                width: 100%;
+                margin: 0 0 8px;
+                transform: none;
+            }
+
+            body.scrollbar-active .toc-item {
+                transform: none;
+            }
+
+            .toc-item a,
+            .toc-item.sub-item a {
+                justify-content: flex-start;
+                box-sizing: border-box;
+                width: 100%;
+                padding: 10px 12px;
+                border-radius: 8px;
+                text-align: left;
+                line-height: 1.35;
+            }
+
+            .toc-item:first-child a {
+                font-size: 1.05rem;
+            }
+
+            .toc-item a {
+                font-size: 1rem;
+            }
+
+            .toc-item.sub-item a {
+                padding-left: 24px;
+                font-size: 0.92rem;
+                opacity: 0.86;
+            }
+
+            .toc-text-container {
+                white-space: normal;
+                overflow: visible;
+            }
+
+            .toc-item.active a {
+                background: rgba(184, 135, 94, 0.14);
+                transform: none;
             }
         }
 
