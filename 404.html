@@ -3535,6 +3535,10 @@
                     setupArticlePage,
                     extractArticleData,
                     () => {
+                        if (articleCleanupFunction) {
+                            articleCleanupFunction();
+                            articleCleanupFunction = null;
+                        }
                         const { cleanup } = initializeArticlePage(mode);
                         articleCleanupFunction = cleanup;
                         finalizeArticlePage();
