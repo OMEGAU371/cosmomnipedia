@@ -4594,13 +4594,6 @@
                     if (animationFrameId) {
                         cancelAnimationFrame(animationFrameId);
                     }
-                    if (isMobileLayout) {
-                        smoothScrollWrapper.style.transform = '';
-                        body.style.height = 'auto';
-                        handleScrollEffects(window.scrollY);
-                        addTrackedListener(window, 'scroll', () => handleScrollEffects(window.scrollY), { passive: true });
-                        return;
-                    }
                     update();
                 }
 
