@@ -3556,8 +3556,12 @@
                 }, blackScreenHold);
             }
 
+            const DEFAULT_ARTICLE_SLUG = 'anatolia-hieroglyphs';
+            let currentArticleSlug = DEFAULT_ARTICLE_SLUG;
             let articleCleanupFunction = null;
             let articleContentLoadPromise = null;
+            let articleContentLoadSlug = null;
+            let articleRegistryPromise = null;
 
             function getDeploymentBasePath() {
                 return window.location.pathname === '/cosmomnipedia' || window.location.pathname.startsWith('/cosmomnipedia/')
@@ -3565,13 +3569,59 @@
                     : '';
             }
 
-            async function loadArticleContent() {
-                const articleContainer = document.getElementById('article-content-container');
-                if (!articleContainer || articleContainer.dataset.loaded === 'true') return;
+            function getArticleSlugFromPath() {
+                const match = window.location.pathname.match(/\/article\/([^/?#]+)/);
+                return match ? decodeURIComponent(match[1]) : DEFAULT_ARTICLE_SLUG;
+            }
 
-                if (!articleContentLoadPromise) {
-                    const dataUrl = `${getDeploymentBasePath()}/data/anatolia.json`;
-                    articleContentLoadPromise = fetch(dataUrl)
+            async function getArticleRegistry() {
+                if (!articleRegistryPromise) {
+                    articleRegistryPromise = fetch(`${getDeploymentBasePath()}/data/articles.json`)
+                        .then(response => {
+                            if (!response.ok) throw new Error(`Failed to load article registry: ${response.status}`);
+                            return response.json();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            return {
+                                defaultSlug: DEFAULT_ARTICLE_SLUG,
+                                articles: [{
+                                    slug: DEFAULT_ARTICLE_SLUG,
+                                    title: '安纳托利亚象形文字',
+                                    dataPath: 'data/anatolia.json',
+                                    cover: 'https://files.cosmomnipedia.wiki/images/articles/anatolia-hieroglyphs/hamath-inscription-500.jpg'
+                                }]
+                            };
+                        });
+                }
+                return articleRegistryPromise;
+            }
+
+            async function getArticleMeta(slug) {
+                const registry = await getArticleRegistry();
+                return registry.articles.find(article => article.slug === slug)
+                    || registry.articles.find(article => article.slug === registry.defaultSlug)
+                    || registry.articles[0];
+            }
+
+            async function loadArticleContent(slug = currentArticleSlug) {
+                const articleContainer = document.getElementById('article-content-container');
+                if (!articleContainer) return;
+                if (articleContainer.dataset.loadedSlug === slug) return;
+
+                if (!articleContentLoadPromise || articleContentLoadSlug !== slug) {
+                    articleContentLoadSlug = slug;
+                    const articleMetaPromise = getArticleMeta(slug);
+                    articleContainer.dataset.loadedSlug = '';
+                    articleContainer.innerHTML = '';
+                    articleContentLoadPromise = articleMetaPromise
+                        .then(articleMeta => {
+                            if (!articleMeta) throw new Error(`Article not found: ${slug}`);
+                            currentArticleSlug = articleMeta.slug;
+                            const dataPath = articleMeta.dataPath || `data/articles/${articleMeta.slug}.json`;
+                            const dataUrl = `${getDeploymentBasePath()}/${dataPath}`;
+                            return fetch(dataUrl);
+                        })
                         .then(response => {
                             if (!response.ok) throw new Error(`Failed to load article data: ${response.status}`);
                             return response.text();
@@ -3594,7 +3644,7 @@
                             }
                             if (!contentHtml) throw new Error('Article data has no contentHtml field.');
                             articleContainer.innerHTML = contentHtml;
-                            articleContainer.dataset.loaded = 'true';
+                            articleContainer.dataset.loadedSlug = currentArticleSlug;
                             if (typeof lucide !== 'undefined') {
                                 lucide.createIcons({ nodes: Array.from(articleContainer.querySelectorAll('[data-lucide]')) });
                             }
@@ -3602,19 +3652,20 @@
                         .catch(error => {
                             console.error(error);
                             articleContainer.innerHTML = '<p>文章内容加载失败，请稍后重试。</p>';
-                            articleContainer.dataset.loaded = 'true';
+                            articleContainer.dataset.loadedSlug = slug;
                         });
                 }
 
                 await articleContentLoadPromise;
             }
 
-            async function setupArticlePage() {
+            async function setupArticlePage(slug = currentArticleSlug) {
+                currentArticleSlug = slug || DEFAULT_ARTICLE_SLUG;
                 body.classList.remove('on-home-page');
                 homePage.style.display = 'none';
                 articlePage.style.display = 'block';
                 if (homePageCleanupFunction) { homePageCleanupFunction(); homePageCleanupFunction = null; }
-                await loadArticleContent();
+                await loadArticleContent(currentArticleSlug);
 
                 const tocNavButton = document.getElementById('toc-nav-button');
                 if (tocNavButton) {
@@ -3643,10 +3694,10 @@
                 body.classList.add('loaded');
             }
 
-            function showArticlePage(mode = 'initial') {
+            function showArticlePage(mode = 'initial', slug = currentArticleSlug) {
                 transition_PageEnter(
                     mode,
-                    setupArticlePage,
+                    () => setupArticlePage(slug),
                     extractArticleData,
                     () => {
                         if (articleCleanupFunction) {
@@ -3725,7 +3776,7 @@
                 enterArticleBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     transition_PageExit(homePage, () => {
-                        page.show('/article/anatolia-hieroglyphs');
+                        page.show(`/article/${DEFAULT_ARTICLE_SLUG}`);
                     });
                 });
             }
@@ -3745,7 +3796,7 @@
 
             page.base(routeBasePath || '/');
             page('/', () => { showHomePage('transition'); });
-            page('/article/anatolia-hieroglyphs', () => { showArticlePage('transition'); });
+            page('/article/:slug', ctx => { showArticlePage('transition', ctx.params.slug); });
 
             initializeNavControls();
             initializeGlobalContextMenu();
@@ -3770,7 +3821,7 @@
             if (isArticlePath) {
                 blurOverlay.classList.add('active');
                 loadingOverlay.classList.add('visible');
-                showArticlePage('initial');
+                showArticlePage('initial', getArticleSlugFromPath());
             } else {
                 setupHomePage();
                 finalizeHomePage();

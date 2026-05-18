@@ -1,0 +1,19 @@
+{
+  "defaultSlug": "anatolia-hieroglyphs",
+  "articles": [
+    {
+      "slug": "anatolia-hieroglyphs",
+      "title": "安纳托利亚象形文字",
+      "subtitle": "青铜时代晚期至铁器时代的卢维语象形文字系统",
+      "summary": "一种源于安纳托利亚中部的本土语素文字，由约 500 个符号组成。",
+      "category": "文字",
+      "tags": ["卢维语", "安纳托利亚", "青铜时代", "文字系统"],
+      "cover": "https://files.cosmomnipedia.wiki/images/articles/anatolia-hieroglyphs/hamath-inscription-500.jpg",
+      "thumb": "https://files.cosmomnipedia.wiki/images/articles/anatolia-hieroglyphs/hamath-inscription-250.jpg",
+      "dataPath": "data/articles/anatolia-hieroglyphs.json",
+      "createdAt": "2026-04-27",
+      "updatedAt": "2026-05-18",
+      "status": "published"
+    }
+  ]
+}
